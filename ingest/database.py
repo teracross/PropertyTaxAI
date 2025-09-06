@@ -59,7 +59,7 @@ def process_csv(filePath: str, year: int, db_table_lock: threading.Semaphore):
 
         with Session(engine) as session: 
             df = pd.read_csv(filePath, sep=" ", low_memory=False)
-            df['year']=year
+            df['records_year']=year
             df.to_sql(name=table_name, con=engine, if_exists="append", index=False)
                 
 # Function to process a single directory (year)
