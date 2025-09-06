@@ -39,7 +39,7 @@ def getTableName(filename: str):
      return re.sub(r'\d+$', '', os.path.basename(filename))
 
 # Extracts the CSV files from the zip file and returns list(str) of file names
-def unzip(filePath: str):
+def unzip(zipFilePath: str):
     extracted = []
     try:
         with zipfile.ZipFile(zipFilePath, 'r') as zf:
