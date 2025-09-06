@@ -50,9 +50,17 @@ def unzip(zipFilePath: str):
 
     return extracted
 
-# Function to a list of CSV-format files with ".txt" file extension.
-# Ignores files with non ".txt" file extensions as well as subdirectories 
-def process_csv(filePath: str, year: int, db_table_lock: threading.Semaphore):
+
+"""
+Function to ingest data from a CSV file with a ".txt" extension into the database.
+
+Ignores files with non ".txt" extensions and subdirectories.
+
+Adds a "record_year" column and a composite index on "acct" and "records_year" for faster lookups and to prevent data collisions.
+
+TODO: make "acct" and "records_year" values constants
+"""
+def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaphore):
     table_name = ""
     if os.path.basename(filePath).endswith('.txt'):
         table_name = getTableName(filePath)
@@ -63,7 +71,8 @@ def process_csv(filePath: str, year: int, db_table_lock: threading.Semaphore):
         with Session(engine) as session: 
             df = pd.read_csv(filePath, sep=" ", low_memory=False)
             df['records_year']=year
-            df.to_sql(name=table_name, con=engine, if_exists="append", index=False)
+            df = df.set_index(['acct', 'records_year'])
+            df.to_sql(name=table_name, con=engine, if_exists="append", index=True)
                 
 # Function to process a single directory (year)
 def process_directory(dirPath: str):
@@ -90,7 +99,7 @@ def process_directory(dirPath: str):
                 table_name = getTableName(csv_file)
                 lock = locks[table_name]
                 futures.append(
-                    executor.submit(process_csv, os.path.join(dirPath, csv_file), year, lock)
+                    executor.submit(load_data_from_csv, os.path.join(dirPath, csv_file), year, lock)
                 )
  
             for _ in as_completed(futures):
