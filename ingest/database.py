@@ -41,9 +41,12 @@ def getTableName(filename: str):
 # Extracts the CSV files from the zip file and returns list(str) of file names
 def unzip(filePath: str):
     extracted = []
-    with zipfile.ZipFile(filePath, 'r') as zf: 
-         zf.extractall()
-         extracted = zf.namelist()
+    try:
+        with zipfile.ZipFile(zipFilePath, 'r') as zf:
+            zf.extractall()
+            extracted = zf.namelist()
+    except zipfile.BadZipFile:
+        logger.error(f"Error: Could not extract files from {zipFilePath}. File may be corrupt.")
 
     return extracted
 
