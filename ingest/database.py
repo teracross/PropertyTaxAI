@@ -14,13 +14,13 @@ logger.setLevel(logging.WARN)  # set the level to warn
 
 # Configuration variables - TODO: migrate to config file
 DB_HOST = 'localhost'
-DB_NAME = 'database'
-DB_USER = 'username'
-DB_PASSWORD = 'password'
-DB_PORT = 8080
-ZIP_FOLDER = '/path/to/your/zip_folder'
-YEAR_REGEX = r'\d{4}'
-ACCOUNT_ID_REGEX = r'^(\w+)'
+DB_NAME = 'testdb'
+DB_USER = 'postgres'
+DB_PASSWORD = 'local'
+DB_PORT = 5432
+
+# TODO: swap pathing to use Pathlib
+ANNUAL_TAX_RECORDS_FOLDER = 'test/data/2025' 
 
 # Connect to the PostgreSQL database
 engine = create_engine(URL.create(
