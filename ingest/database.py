@@ -66,7 +66,7 @@ TODO: make "acct" and "records_year" values constants
 """
 def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaphore):
     table_name = ""
-    if os.path.basename(filePath).endswith('.txt'):
+    if filePath.endswith('.txt'):
         table_name = getTableName(filePath)
 
     with db_table_lock:
