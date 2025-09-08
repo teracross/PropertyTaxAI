@@ -95,7 +95,7 @@ def process_directory(dirPath: str):
     # process csv files extracted from each zip file concurrently
     for zip in zip_files: 
         csv_file_names = unzip(os.path.join(dirPath, zip))
-        locks = {getTableName(filename=c): threading.Semaphore(1) for c in csv_file_names}
+        locks = {getTableName(file_path=c): threading.Semaphore(1) for c in csv_file_names}
 
         with ThreadPoolExecutor() as executor:
             futures = []
