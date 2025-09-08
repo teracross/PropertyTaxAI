@@ -1,0 +1,12 @@
+# terraform
+**/.terraform
+**/.terraform.lock.hcl
+**/*.tfstate
+
+# python
+**/.venv
+
+# generated or data files
+**/*.txt
+test/data/**/*.zip
+test/data/**/*.Identifier
