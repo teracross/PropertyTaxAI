@@ -35,8 +35,12 @@ engine = create_engine(URL.create(
 # semaphores for each table to prevent collision on table creates and writes
 locks = {}
 
-def getTableName(filename: str):
-     return re.sub(r'\d+$', '', os.path.basename(filename))
+def getTableName(file_path: str):
+    filename = os.path.basename(file_path)
+    file_basename, suffix = filename.split(".")
+    cleaned_filename = re.sub(r'\d+$', '', file_basename)
+    return cleaned_filename
+    
 
 # Extracts the CSV files from the zip file and returns list(str) of file names
 def unzip(zipFilePath: str):
