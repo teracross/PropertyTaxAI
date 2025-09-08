@@ -9,8 +9,10 @@ from sqlalchemy import create_engine, Engine, URL
 from sqlalchemy.orm import Session
 
 # Initialize the logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARN)  # set the level to warn
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('ingest')
+logger.setLevel(logging.DEBUG)  # TODO: reset the level to warn
 
 # Configuration variables - TODO: migrate to config file
 DB_HOST = 'localhost'
@@ -70,9 +72,10 @@ def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaph
         table_name = getTableName(filePath)
 
     with db_table_lock:
-        logger.debug("Acuiring DB table lock for ", table_name)
+        logger.debug(f"Acuiring DB table lock for {table_name}")
 
         with Session(engine) as session: 
+            logger.debug(f"Writing to table: {table_name}")
             df = pd.read_csv(filePath, sep=" ", low_memory=False)
             df['records_year']=year
             df = df.set_index(['acct', 'records_year'])
