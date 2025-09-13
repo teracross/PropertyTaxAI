@@ -127,6 +127,21 @@ def process_directory(dirPath: str):
             for _ in as_completed(futures):
                 pass
 
+"""Removes all files ending in .txt in the same directory as this Python script."""
+def remove_txt_files():
+    for filename in os.listdir():
+        if filename.endswith(".txt"):
+            os.remove(filename)
+
 # Start processing the ZIP folder
 # TODO: expand to handle multiple directories (multiple tax years)
-process_directory(ZIP_FOLDER)
+current_script_folder = os.path.dirname(os.getcwd()) 
+process_directory(current_script_folder + '/' + ANNUAL_TAX_RECORDS_FOLDER)
+
+# verify tables created
+inspector = inspect(engine)
+tables = inspector.get_table_names()
+print("Tables in the database:", tables)
+
+# cleanup generated text files
+remove_txt_files()
