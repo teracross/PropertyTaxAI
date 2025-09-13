@@ -121,7 +121,7 @@ def process_directory(dirPath: str):
                 table_name = getTableName(csv_file)
                 lock = locks[table_name]
                 futures.append(
-                    executor.submit(load_data_from_csv, os.path.join(dirPath, csv_file), year, lock)
+                    executor.submit(load_data_from_csv, os.path.join(os.getcwd(), csv_file), year, lock)
                 )
  
             for _ in as_completed(futures):
