@@ -2,6 +2,7 @@
 **/.terraform
 **/.terraform.lock.hcl
 **/*.tfstate
+**/*.tfstate.backup
 
 # python
 **/.venv
@@ -10,3 +11,6 @@
 **/*.txt
 test/data/**/*.zip
 test/data/**/*.Identifier
+
+# vscode
+**/.vscode
