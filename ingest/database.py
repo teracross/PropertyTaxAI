@@ -5,8 +5,8 @@ import pandas as pd
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed, Future
-from sqlalchemy import create_engine, Engine, URL
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, Engine, URL, inspect
+from sqlalchemy.orm import Session, sessionmaker, scoped_session
 
 # Initialize the logger
 logging.basicConfig(level=logging.DEBUG,
@@ -33,6 +33,10 @@ engine = create_engine(URL.create(
     password=DB_PASSWORD, 
     database=DB_NAME
     ))
+
+# Create a scoped_session factory for multi-threading with SQL Alchemy
+Session_factory = sessionmaker(bind=engine)
+Scoped_Session = scoped_session(Session_factory)
 
 # semaphores for each table to prevent collision on table creates and writes
 locks = {}
@@ -74,12 +78,23 @@ def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaph
     with db_table_lock:
         logger.debug(f"Acuiring DB table lock for {table_name}")
 
-        with Session(engine) as session: 
-            logger.debug(f"Writing to table: {table_name}")
-            df = pd.read_csv(filePath, sep=" ", low_memory=False)
-            df['records_year']=year
-            df = df.set_index(['acct', 'records_year'])
-            df.to_sql(name=table_name, con=engine, if_exists="append", index=True)
+        try: 
+            with Scoped_Session() as session:               
+                logger.debug(f"Writing to table: {table_name}")
+                df = pd.read_csv(filePath, sep=' ', engine='python')
+                df['records_year']=year
+                df = df.set_index(['acct', 'records_year'])
+                df.to_sql(name=table_name, con=session.connection(), if_exists="append", index=True, chunksize=10000)
+                session.commit()
+        except Exception as e:
+            # Rollback the session for the current thread on error.
+            logger.error(f"Thread {threading.current_thread().name}: Error writing to {table_name}: {e}")
+            Scoped_Session.rollback()
+        finally:
+            # Crucial for multithreading: remove() closes the thread-local session.
+            Scoped_Session.remove()
+
+        
                 
 # Function to process a single directory (year)
 def process_directory(dirPath: str):
