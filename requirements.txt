@@ -2,3 +2,5 @@ pandas
 psycopg
 sqlalchemy
 yapf
+pdfplumber
+camelot-py[all]
