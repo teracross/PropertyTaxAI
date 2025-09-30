@@ -4,3 +4,4 @@ sqlalchemy
 yapf
 pdfplumber
 camelot-py[all]
+modin[all]
