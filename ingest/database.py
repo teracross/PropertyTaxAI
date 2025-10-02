@@ -1,18 +1,18 @@
 import os
 import re
 import zipfile
-import modin.pandas as pd
+import modin.pandas as md_pd
+import pandas as pd
 import logging
-import threading
 import pdfplumber
 import sys
 import csv
 
 from pandas.io.parsers import TextFileReader
-from concurrent.futures import ThreadPoolExecutor, as_completed, Future
-from sqlalchemy import create_engine, Engine, URL, inspect
+from sqlalchemy import create_engine, URL, inspect
 from modin.db_conn import ModinDatabaseConnection
-# from sqlalchemy.orm import Session, sessionmaker, scoped_session
+from distributed import Client
+from typing import List
 
 # Initialize the logger
 logging.basicConfig(level=logging.WARN,
@@ -40,20 +40,13 @@ sqlalchemy_engine = create_engine(URL.create(
     database=DB_NAME
     ))
 engine = ModinDatabaseConnection(
-    "psycopg",
+    "sqlalchemy",
     host=str(DB_HOST), 
     dbname=DB_NAME,
     port=DB_PORT,
     user=DB_USER,
     password=DB_PASSWORD
 )
-
-# Create a scoped_session factory for multi-threading with SQL Alchemy
-# Session_factory = sessionmaker(bind=sqlalchemy_engine)
-# Scoped_Session = scoped_session(Session_factory)
-
-# semaphores for each table to prevent collision on table creates and writes
-locks = {}
 
 # for parsing primary key values from pdataCodebook.pdf
 filename_regex = r'Text file: [^\n]+'
@@ -64,14 +57,14 @@ table_name_regex = 'Text file: '
 table_name_pattern = re.compile(table_name_regex)
 suggested_keys = {}
 
-def getTableName(file_path: str):
+def get_table_name(file_path: str):
     filename = os.path.basename(file_path)
     file_basename, suffix = filename.split(".")
-    cleaned_filename = re.sub(r'\d+$', '', file_basename)
-    return cleaned_filename
-    
+    return file_basename    
 
-# Extracts the CSV files from the zip file and returns list(str) of file names
+""" 
+Extracts the CSV files from the zip file and returns list(str) of file names
+"""
 def unzip(zipFilePath: str):
     extracted = []
     try:
@@ -90,70 +83,77 @@ def get_copy_statement(table_name: str):
         FROM STDIN WITH (FORMAT CSV, DELIMITER ' ')
     """ 
 
+def fix_invalid_formatting(data_frame: md_pd.DataFrame) -> md_pd.DataFrame: 
+    for column_name in data_frame.columns.to_list():
+    # Check if the column exists and has a string-like data type and contains the single quote character
+        if data_frame[column_name].dtype == 'object' and data_frame[column_name].astype(str).str.contains("'").any():
+            logger.debug(f"Quotes found in column '{column_name}'. Performing replacement.")
+            data_frame[column_name] = data_frame[column_name].astype(str).str.replace('"', '"""')
+
+    return data_frame
+
+def prepare_dataframe_for_db(year: int, table_name: str, data_frame: md_pd.DataFrame) -> md_pd.DataFrame:
+    data_frame['records_year'] = year
+    index = []
+    if (table_name in suggested_keys.keys()): 
+        index = suggested_keys[table_name].copy()
+        index.append('records_year')
+    else:
+        index = ['acct', 'records_year']
+    data_frame.set_index(index, inplace=True)
+
+    return data_frame
 
 """
 Function to ingest data from a CSV file with a ".txt" extension into the database.
 
 Ignores files with non ".txt" extensions and subdirectories.
-
 Adds a "record_year" column and a composite index on "acct" and "records_year" for faster lookups and to prevent data collisions.
 
 TODO: make "acct" and "records_year" values constants
 """
+def load_data_from_csv(filePath: str, year: int):
+    table_name = get_table_name(filePath) if filePath.endswith('.txt') else ''
+    csv_data = None
+    connection = sqlalchemy_engine.connect()
 
-#  load_data_from_csv("./building_other.txt", 2025, threading.Semaphore(1))
-def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaphore):
-    table_name = ""
-    if filePath.endswith('.txt'):
-        table_name = getTableName(filePath)
+    try: 
+        logger.info(f"Writing to table: {table_name}")
+        csv_data = md_pd.read_csv(
+            filePath, 
+            sep='\x09', 
+            engine='python', 
+            encoding='MacRoman', 
+            quoting=csv.QUOTE_NONE, 
+            escapechar='\\', 
+            on_bad_lines='warn'
+        )
 
-    with db_table_lock:
-        logger.debug(f"Acuiring DB table lock for {table_name}")
+        df_chunks: List[md_pd.DataFrame] = []
+        if isinstance(csv_data, TextFileReader): 
+            for chunk in csv_data: 
+                # logger.debug(f"Current Dataframe columns: {chunk.columns}")
+                df_chunks.append(prepare_dataframe_for_db(year, table_name, chunk))
+        else: 
+            # logger.debug(f"Current Dataframe columns: {csv_data.columns}")
+            df_chunks.append(prepare_dataframe_for_db(year, table_name, csv_data))
 
-        try: 
-            # with Scoped_Session() as session:               
-                logger.debug(f"Writing to table: {table_name}")
-                csv_data = pd.read_csv(filePath, sep='\t', engine='python', encoding='MacRoman', escapechar='\"', iterator=False)
-
-                df_chunks = []
-                if isinstance(csv_data, TextFileReader): 
-                    for chunk in csv_data: 
-                        df_chunks.append(prepare_dataframe_for_db(year, table_name, chunk))
-                else: 
-                    df_chunks.append(prepare_dataframe_for_db(year, table_name, csv_data))
-
-                for df in df_chunks: 
-                    if df != None: 
-                        df.to_sql(name=table_name, con=engine, if_exists="append", index=True, chunksize=10000)
-                    else: 
-                        logger.warning(f"Null dataframe chunk encountered while processing {os.path.basename(filePath)}")
-                
-                # session.commit()
-        except Exception as e:
-            # Rollback the session for the current thread on error.
-            # logger.error(f"Thread {threading.current_thread().name}: Error writing to {table_name}: {e}", e)
-            logger.error(f"Error writing to {table_name}: {e}", e)
-            # Scoped_Session.rollback()
-        finally:
-            if filePath.endswith(".txt"):
-                logger.debug(f'Removing file {os.path.basename(filePath)} to save on memory.')
-                os.remove(filePath)
-
-            # Crucial for multithreading: remove() closes the thread-local session.
-            # Scoped_Session.remove()
-
-def prepare_dataframe_for_db(year, table_name, df):
-    df['records_year'] = year
-    if (table_name in suggested_keys.keys()): 
-        index = suggested_keys[table_name] + list('records_year')
-        df = df.set_index(index)
-    else: 
-        df = df.set_index(['acct', 'records_year'])
-    return df
-
+        for df in df_chunks: 
+            df.to_sql(name=table_name, con=connection, if_exists="append", index=True, chunksize=10000)
+    except Exception as e:
+        logger.error("Error writing to table %s: %s", table_name, e, exc_info=True)
+    finally:
+        # Remove generated text file to save on memory - TODO: undo commenting-out below
+        # if filePath.endswith(".txt"):
+        #     logger.debug(f'Removing file {os.path.basename(filePath)} to save on memory.')
+        #     os.remove(filePath)
         
-                
-# Function to process a single directory (year)
+        # ensure connection closed
+        connection.close()
+               
+""" 
+Function to process a single directory (year)
+"""
 def process_directory(dirPath: str):
     # retrieve the year value from the folder name
     try: 
@@ -170,31 +170,24 @@ def process_directory(dirPath: str):
     # process csv files extracted from each zip file concurrently
     for zip in zip_files: 
         csv_file_names = unzip(os.path.join(dirPath, zip))
-        locks = {getTableName(file_path=c): threading.Semaphore(1) for c in csv_file_names}
+        for csv_file in csv_file_names:
+            load_data_from_csv(os.path.join(os.getcwd(), csv_file), year)
 
-        with ThreadPoolExecutor() as executor:
-            futures = []
-            for csv_file in csv_file_names:
-                table_name = getTableName(csv_file)
-                lock = locks[table_name]
-                futures.append(
-                    executor.submit(load_data_from_csv, os.path.join(os.getcwd(), csv_file), year, lock)
-                )
- 
-            for _ in as_completed(futures):
-                pass
-
-"""Removes all files ending in .txt in the same directory as this Python script."""
+"""
+Removes all files ending in .txt in the same directory as this Python script.
+"""
 def remove_txt_files():
     for filename in os.listdir():
         if filename.endswith(".txt"):
             os.remove(filename)
 
-# Get the primary keys for the tables
+""" 
+Get the primary keys for the tables
+"""
 def retieve_primary_keys(filePath: str): 
     pdf = None
     table_name = ''
-    result = dict()
+
     try:
         pdf = pdfplumber.open(filePath)
         pages = pdf.pages[2::1] # start from the 3rd page of the pdf
@@ -215,37 +208,50 @@ def retieve_primary_keys(filePath: str):
                         # remove any unecessary text 
                         keys_str = keys_str.split(' ')[0]
 
-                    suggested_keys[table_name] = keys_str.strip().split(',')
+                    suggested_keys[table_name] = keys_str.replace(' ', '').split(',')
     except Exception as e:
-        logger.error('Error extracting tables with pdfplumber', e)
+        logger.error('Error extracting primary keys from tables using pdfplumber', e)
     finally:
         if pdf is not None:
             pdf.close()
 
-""" exeuction below """
-field_size_limit = sys.maxsize
-while True:
-    try:
-        csv.field_size_limit(field_size_limit)
-        break
-    except OverflowError:
-        field_size_limit = int(field_size_limit / 10)
 
-# TODO: expand to handle multiple directories (multiple tax years)
-current_script_folder = os.path.dirname(os.getcwd()) 
-test_data_filepath = current_script_folder + '/' + ANNUAL_TAX_RECORDS_FOLDER
+def main():
+    client = Client()
 
-# retrieve the suggested primary keys for the tables 
-retieve_primary_keys(rf'{test_data_filepath}/pdataCodebook.pdf')
-logger.debug(f'Suggested primary keys: {suggested_keys}')
+    # configure max field size limit for reading csv file data
+    field_size_limit = sys.maxsize
+    while True:
+        try:
+            csv.field_size_limit(field_size_limit)
+            break
+        except OverflowError:
+            field_size_limit = int(field_size_limit / 10)
 
-# Start processing the ZIP folder
-process_directory(test_data_filepath)
+    # TODO: expand to handle multiple directories (multiple tax years)
+    current_script_folder = os.path.dirname(os.getcwd()) 
+    test_data_filepath = current_script_folder + '/' + ANNUAL_TAX_RECORDS_FOLDER
 
-# verify tables created
-inspector = inspect(sqlalchemy_engine)
-tables = inspector.get_table_names()
-print("Tables in the database:", tables)
+    # retrieve the suggested primary keys for the tables 
+    retieve_primary_keys(rf'{test_data_filepath}/pdataCodebook.pdf')
+    logger.debug(f'Suggested primary keys: {suggested_keys}')
 
-# cleanup generated text files
-remove_txt_files()
+    if (len(sys.argv) > 1): 
+        filepath = os.path.join(os.getcwd(), sys.argv[1])
+        logger.debug(f'Filepath: {filepath}')
+        load_data_from_csv(filepath, 2025)
+    else: 
+        # Start processing the ZIP folder
+        process_directory(test_data_filepath)
+
+        # cleanup generated text files
+        remove_txt_files()
+    
+    # verify tables created
+    inspector = inspect(sqlalchemy_engine)
+    tables = inspector.get_table_names()
+    print("Tables in the database:", tables)
+
+
+if __name__ == "__main__":
+    main()
