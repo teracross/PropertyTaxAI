@@ -4,13 +4,17 @@
 **/*.tfstate
 **/*.tfstate.backup
 
+# tf plan files
+plan
+
 # python
 **/.venv
+**/*.pyc
 
 # generated or data files
 **/*.txt
 test/data/**/*.zip
-test/data/**/*.Identifier
+**/*.Identifier
 
 # vscode
 **/.vscode
