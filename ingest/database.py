@@ -239,7 +239,7 @@ def main():
     # verify tables created
     inspector = inspect(engine)
     tables = inspector.get_table_names()
-    print("Tables in the database:", tables)
+    logger.info("Tables in the database:", tables)
 
 if __name__ == "__main__":
     main()
