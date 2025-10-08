@@ -15,10 +15,15 @@ from pandas import DataFrame
 from typing import List
 
 # Initialize the logger
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,  # Set the minimum logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Define the log message format
+    handlers=[
+        logging.StreamHandler(),  # Handler for outputting to stdout
+        logging.FileHandler('app.log')  # Handler for outputting to a file named 'app.log'
+    ]
+)
 logger = logging.getLogger('ingest')
-logger.setLevel(logging.INFO)  # TODO: reset the level to warn
 
 # Configuration variables - TODO: migrate to config file
 DB_HOST = 'localhost'
@@ -116,6 +121,7 @@ def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaph
                 df = prepare_dataframe_for_db(year, table_name, df)
                 df.to_sql(name=table_name, con=session.connection(), if_exists="append", index=True, chunksize=10000)
                 session.commit()
+                logger.info(f"Writes to {table_name} table completed.")
         except Exception as e:
             # Rollback the session for the current thread on error.
             logger.error(f"Thread {threading.current_thread().name}: Error writing to {table_name}: {e}")
