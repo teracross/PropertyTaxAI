@@ -11,6 +11,7 @@ import csv
 from concurrent.futures import ThreadPoolExecutor, as_completed, Future
 from sqlalchemy import create_engine, URL, inspect
 from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy import String
 from pandas import DataFrame
 from typing import List
 
@@ -109,17 +110,20 @@ def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaph
         try: 
             with Scoped_Session() as session:               
                 logger.info(f"Writing to table: {table_name}")
-                df = pd.read_csv(
+                textFileReader = pd.read_csv(
                     filePath, 
                     sep='\x09', 
                     engine='python', 
                     encoding='MacRoman', 
                     escapechar='\\', 
-                    on_bad_lines='warn')
+                    doublequote=False,
+                    on_bad_lines='warn', 
+                    chunksize=4500, 
+                    dtype=str) # setting all d-types to string
                 
-                # for _, df in enumerate(textFileReader): 
-                df = prepare_dataframe_for_db(year, table_name, df)
-                df.to_sql(name=table_name, con=session.connection(), if_exists="append", index=True, chunksize=10000)
+                for _, df in enumerate(textFileReader): 
+                    df = prepare_dataframe_for_db(year, table_name, df)
+                    df.to_sql(name=table_name, con=session.connection(), if_exists="append", index=True, chunksize=500, method='multi', dtype=String)
                 session.commit()
                 logger.info(f"Writes to {table_name} table completed.")
         except Exception as e:
