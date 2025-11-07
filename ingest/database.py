@@ -17,8 +17,8 @@ from typing import List
 
 # Initialize the logger
 logging.basicConfig(
-    level=logging.INFO,  # Set the minimum logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL)
-    format='%(asctime)s - %(levelname)s - %(message)s',  # Define the log message format
+    level=logging.INFO,  
+    format='%(asctime)s - %(levelname)s - %(message)s',  
     handlers=[
         logging.StreamHandler(),  # Handler for outputting to stdout
         logging.FileHandler('app.log')  # Handler for outputting to a file named 'app.log'
@@ -127,7 +127,6 @@ def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaph
                 session.commit()
                 logger.info(f"Writes to {table_name} table completed.")
         except Exception as e:
-            # Rollback the session for the current thread on error.
             logger.error(f"Thread {threading.current_thread().name}: Error writing to {table_name}: {e}")
             Scoped_Session.rollback()
         finally:
@@ -166,7 +165,9 @@ def process_directory(dirPath: str):
             for _ in as_completed(futures):
                 pass
 
-"""Removes all files ending in .txt in the same directory as this Python script."""
+"""
+Removes all files ending in .txt in the same directory as this Python script.
+"""
 def remove_txt_files():
     for filename in os.listdir():
         if filename.endswith(".txt"):
