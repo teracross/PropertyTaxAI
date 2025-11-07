@@ -118,10 +118,11 @@ def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaph
                     escapechar='\\', 
                     doublequote=False,
                     on_bad_lines='warn', 
-                    chunksize=4500, 
+                    chunksize=500, 
                     dtype=str) # setting all d-types to string
                 
-                for _, df in enumerate(textFileReader): 
+                
+                for count, df in enumerate(textFileReader): 
                     df = prepare_dataframe_for_db(year, table_name, df)
                     df.to_sql(name=table_name, con=session.connection(), if_exists="append", index=True, chunksize=500, method='multi', dtype=String)
                 session.commit()
