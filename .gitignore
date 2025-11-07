@@ -21,3 +21,6 @@ test/data/**/*.zip
 
 # logging
 **/app.log
+
+# local proxmox config
+deploy/terraform/local-proxmox/*.tfvars
