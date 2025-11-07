@@ -17,7 +17,7 @@ Note - initial scope of project will be limited to property tax data from the Ha
 [] Create automated testing for evaluation model performance on database as well 
 [] Investigate moving multi-threaded processing to serverless architecture (AWS Lambda) for paralle processing without additional costs with maintaining EC2 instances
 
-## Deployment STage
+## Deployment Stage
 [] Deployment of multi-node PostgreSQL DB with backup. 
 [] Auotomate deployment of resources (local and cloud) using Docker and Kubernetes.
 
@@ -31,7 +31,7 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 ```
-
+[] Stretch goal: Get Proxmox Terraform config working. 
 
 # Challenges
 - Cloud hosting - which provider to use as well as how to leverage cloud LLM for inference purposes? 
@@ -43,4 +43,4 @@ Code is provided as-is.
 Generated Code Disclaimer
 ---------------
 
-Some portions of this project's code are generated using Mistral LLM running locally with Ollama. 
+Some portions of this project's code are generated using LLMs. 
