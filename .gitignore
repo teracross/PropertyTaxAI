@@ -15,6 +15,7 @@ plan
 **/*.txt
 test/data/**/*.zip
 **/*.Identifier
+**/*.tsv
 
 # vscode
 **/.vscode
