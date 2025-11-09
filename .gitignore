@@ -21,3 +21,6 @@ test/data/**/*.zip
 
 # logging
 **/app.log
+
+# Django Postgres DB Access
+**/*.env
