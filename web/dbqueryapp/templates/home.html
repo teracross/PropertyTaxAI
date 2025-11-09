@@ -65,6 +65,24 @@
             padding: 12px;
             border-radius: 6px;
         }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 900px;
+            margin: 20px auto 0 auto;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #4caf50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
     </style>
 </head>
 <body>
@@ -82,7 +100,24 @@
     {% if result %}
       <div class="result">
         <h4>Query Results:</h4>
-        <pre>{{ result|safe }}</pre>
+        <table>
+          <thead>
+            <tr>
+              {% for key in result.0.keys %}
+              <th>{{ key }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in result %}
+            <tr>
+              {% for value in row.values %}
+              <td>{{ value }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     {% endif %}
 </div>
