@@ -58,6 +58,7 @@ primary_key_pattern = re.compile(primary_key_regex)
 table_name_regex = 'Text file: '
 table_name_pattern = re.compile(table_name_regex)
 suggested_keys = {}
+invalid_tables = ['ownership_history'] # tables were pdataCodebook is invalid
 
 # semaphores for each table to prevent collision on table creates and writes
 locks = {}
@@ -83,7 +84,7 @@ def prepare_dataframe_for_db(year: int, table_name: str, data_frame: DataFrame) 
     data_frame['records_year'] = year
     index = []
 
-    if (table_name in suggested_keys.keys()): 
+    if (table_name not in invalid_tables and table_name in suggested_keys.keys()): 
         index = suggested_keys[table_name].copy()
         index.append('records_year')
     else:
