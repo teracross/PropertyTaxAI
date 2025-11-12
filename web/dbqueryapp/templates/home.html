@@ -23,6 +23,30 @@
             text-align: center;
             min-width: 320px;
         }
+        .results_container, .result-scroll {
+            box-sizing: border-box;
+        }
+        .results_container {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            padding: 40px 32px;
+            margin-top: 10vh;
+            box-shadow: 0 0 16px rgba(0,0,0,0.1);
+            text-align: center;
+            min-width: 320px;
+            height: 65vh;
+            width: 100vw; 
+            flex-direction: column; 
+            align-items: stretch;
+        }
+        .results-header {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.6em;
+            font-weight: 600;
+        }
         .query-dropdown {
             width: 100%;
             padding: 12px;
@@ -48,7 +72,6 @@
         .result, .error {
             margin-top: 24px;
             text-align: left;
-            max-width: 600px;
             margin-left: auto;
             margin-right: auto;
             font-size: 1rem;
@@ -68,6 +91,7 @@
         table {
             border-collapse: collapse;
             width: 100%;
+            min-width: 600px;
             max-width: 900px;
             margin: 20px auto 0 auto;
         }
@@ -83,43 +107,63 @@
         tr:nth-child(even) {
             background-color: #f9f9f9;
         }
+        .result-scroll {
+            flex: 1 1 0%;
+            width: 80vw;
+            height: 100%;
+            min-width: 0;
+            max-width: 100%;
+            max-height: 50vh;
+            overflow-x: scroll;
+            overflow-y: scroll;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.07);
+            padding: 0.5em;
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>SQL Query Executor</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.query }}
-        <br>
-        <button type="submit">Execute Query</button>
-    </form>
-    {% if error %}
-      <div class="error">{{ error }}</div>
-    {% endif %}
-    {% if result %}
-      <div class="result">
-        <h4>Query Results:</h4>
-        <table>
-          <thead>
-            <tr>
-              {% for key in result.0.keys %}
-              <th>{{ key }}</th>
-              {% endfor %}
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in result %}
-            <tr>
-              {% for value in row.values %}
-              <td>{{ value }}</td>
-              {% endfor %}
-            </tr>
+  <h2>SQL Query Executor</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.query }}
+    <br>
+    <button type="submit">Execute Query</button>
+  </form>
+  {% if error %}
+  <div class="error">{{ error }}</div>
+  {% endif %}
+</div>
+<div class="results_container">
+  {% if result %}
+  <div class="result">
+    <div class="result-scroll">
+      <h2 class="results-header">Query Results:</h2>
+      <table>
+        <thead>
+          <tr>
+            {% for key in result.0.keys %}
+            <th>{{ key }}</th>
             {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in result %}
+          <tr>
+            {% for value in row.values %}
+            <td>{{ value }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+    <h2>No results to display for query</h2>
+  {% endif %}
 </div>
 </body>
 </html>
