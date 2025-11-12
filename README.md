@@ -33,6 +33,13 @@ pip install -r requirements.txt
 ```
 [] Stretch goal: Get Proxmox Terraform config working. 
 
+# Running web app
+Assuming python virtual environment is already installed, use the quickstart_server.sh file to start the Django web app from the repository root. 
+
+```
+. ./quickstart_server.sh
+```
+
 # Challenges
 - Cloud hosting - which provider to use as well as how to leverage cloud LLM for inference purposes? 
 - Determining how to upscale Python application for handling ingest and processing of csv files (past years only need to be imported once, however data from the current year could be updated periodically). In addition, need to ensure that only changes in data are sent to database. (Operation mostly to be run on daily chron schedule.)
