@@ -112,6 +112,15 @@ def clean_file_remove_nulls(input_file_path, output_file_path=None):
 
     return output_file_path
 
+"""
+Logs warning for any errors encountered while using Pandas to parse CSV file
+
+Returns:
+        None: Indicates that the bad line should be skipped.
+"""
+def log_bad_line(bad_line, table_name):
+    logger.warning(f"While processing {table_name} file, bad line encountered: {bad_line}")
+    return None # Returning None will skip the line
 
 
 """
@@ -142,7 +151,7 @@ def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaph
                     encoding='MacRoman', 
                     escapechar='\\', 
                     doublequote=False,
-                    on_bad_lines='warn', 
+                    on_bad_lines=lambda x: log_bad_line(x, table_name),  
                     chunksize=500, 
                     dtype=str) # setting all d-types to string
                 
