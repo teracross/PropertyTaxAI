@@ -127,7 +127,7 @@ def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaph
                     df = prepare_dataframe_for_db(year, table_name, df)
                     df.to_sql(name=table_name, con=session.connection(), if_exists="append", index=True, chunksize=500, method='multi', dtype=String)
                 session.commit()
-                logger.info(f"Writes to {table_name} table completed.")
+                logger.info(f"Finished writing to {table_name} table.")
         except Exception as e:
             logger.error(f"Thread {threading.current_thread().name}: Error writing to {table_name}: {e}")
             Scoped_Session.rollback()
