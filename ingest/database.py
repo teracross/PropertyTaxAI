@@ -94,6 +94,27 @@ def prepare_dataframe_for_db(year: int, table_name: str, data_frame: DataFrame) 
     return data_frame
 
 """
+Remove NUL bytes from input file and write cleaned content to output_file_path.
+If output_file_path is None, overwrite the input file.
+"""
+def clean_file_remove_nulls(input_file_path, output_file_path=None):
+
+    if output_file_path is None:
+        output_file_path = input_file_path + '.cleaned'
+
+    with open(input_file_path, 'rb') as infile, open(output_file_path, 'wb') as outfile:
+        while True:
+            chunk = infile.read(1024 * 1024)  # 1MB chunk
+            if not chunk:
+                break
+            cleaned_chunk = chunk.replace(b'\x00', b'')
+            outfile.write(cleaned_chunk)
+
+    return output_file_path
+
+
+
+"""
 Function to ingest data from a CSV file with a ".txt" extension into the database.
 Ignores files with non ".txt" extensions and subdirectories.
 Adds a "record_year" column and a composite index on "acct" and "records_year" for faster lookups and to prevent data collisions.
@@ -109,10 +130,13 @@ def load_data_from_csv(filePath: str, year: int, db_table_lock: threading.Semaph
         logger.info(f"Acuiring DB table lock for {table_name}")
 
         try: 
-            with Scoped_Session() as session:               
+            with Scoped_Session() as session: 
+                logger.info(f"Cleaning input file for table: {table_name}")
+                cleaned_file = clean_file_remove_nulls(filePath, )
+
                 logger.info(f"Writing to table: {table_name}")
                 textFileReader = pd.read_csv(
-                    filePath, 
+                    cleaned_file, 
                     sep='\x09', 
                     engine='python', 
                     encoding='MacRoman', 
@@ -168,11 +192,11 @@ def process_directory(dirPath: str):
                 pass
 
 """
-Removes all files ending in .txt in the same directory as this Python script.
+Removes all files ending in .txt or .cleaned in the same directory as this Python script.
 """
 def remove_txt_files():
     for filename in os.listdir():
-        if filename.endswith(".txt"):
+        if filename.endswith(".txt") or filename.endswith(".cleaned"):
             os.remove(filename)
 
 """ 
