@@ -26,7 +26,7 @@ provider "proxmox" {
 # Proxmox LXC for PostgreSQL
 resource "proxmox_virtual_environment_container" "postgres" {
   description = "VM for Postgres SQL DB for Property Tax Project"
-  node_name = "edlab"
+  node_name = "${var.homelab_node_name}"
   vm_id     = 110
 
   initialization {

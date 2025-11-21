@@ -41,3 +41,8 @@ variable "proxmox_token_id" {
   type = string
   sensitive = true
 }
+
+variable "homelab_node_name" {
+  type = string
+  sensitive = true
+}
