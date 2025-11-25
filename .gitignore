@@ -3,6 +3,7 @@
 **/.terraform.lock.hcl
 **/*.tfstate
 **/*.tfstate.backup
+**/*.tfvars
 
 # tf plan files
 plan
