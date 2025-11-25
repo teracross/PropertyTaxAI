@@ -124,9 +124,13 @@ def log_bad_line(bad_line, table_name):
 
 
 """
-Function to ingest data from a CSV file with a ".txt" extension into the database.
+Function to ingest data from a TSV file with a ".txt" extension into the database.
 Ignores files with non ".txt" extensions and subdirectories.
-Adds a "record_year" column and a composite index on "acct" and "records_year" for faster lookups and to prevent data collisions.
+
+- Removes null values from input file.
+- Adds a "record_year" column and a composite index on "acct" and "records_year" for faster lookups and to prevent data collisions.
+- By default reads all CSV values as string (see dtyptes in pd.read_csv method call).
+- Logs Pandas parsing errors when reading TSV using class logger.
 
 TODO: make "acct" and "records_year" values constants
 """
@@ -183,6 +187,7 @@ def process_directory(dirPath: str):
     if not zip_files:
         logger.warning("No .zip files found in {}".format(dirPath))
 
+#TODO: think about how to handle multiple zip files (will use a lot of memory for multiple files)
     # process csv files extracted from each zip file concurrently
     for zip in zip_files: 
         csv_file_names = unzip(os.path.join(dirPath, zip))
