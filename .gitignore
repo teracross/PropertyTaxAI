@@ -4,6 +4,7 @@
 **/*.tfstate
 **/*.tfstate.backup
 **/*.tfvars
+deploy/terraform/**/generated-init.sql
 
 # tf plan files
 plan

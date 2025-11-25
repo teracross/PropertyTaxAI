@@ -10,6 +10,18 @@ variable "postgres_password" {
   sensitive = true
 }
 
+variable "postgres_readonly_user" {
+  type = string
+  default = "db_readlonly_user"
+  sensitive = true
+}
+
+variable "postgres_readonly_password" {
+  type = string
+  default = "readonly_password"
+  sensitive = true
+}
+
 variable "postgres_db" {
   type = string
   default = "postgres_db"
