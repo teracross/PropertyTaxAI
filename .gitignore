@@ -1,0 +1,28 @@
+# terraform
+**/.terraform
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.backup
+**/*.tfvars
+deploy/terraform/**/generated-init.sql
+
+# tf plan files
+plan
+
+# python
+**/.venv
+**/*.pyc
+
+# generated or data files
+**/*.txt
+test/data/**/*.zip
+**/*.Identifier
+
+# vscode
+**/.vscode
+
+# logging
+**/app.log
+
+# Django Postgres DB Access
+**/*.env
