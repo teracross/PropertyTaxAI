@@ -160,6 +160,24 @@
         </tbody>
       </table>
     </div>
+    <div style="margin-top: 20px; text-align: center;">
+    <table style="margin: 0 auto; border-collapse: collapse; border: none; border-spacing: 0;">
+      <tr>
+        <td style="padding-right: 8px; vertical-align: middle; text-align: right;">
+          <select name="format" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="sql">SQL</option>
+          </select>
+        </td>
+        <td style="vertical-align: middle; text-align: left;">
+          <form method="get" action="{% url 'export_results' query_key %}">
+            <button type="submit" style="padding: 8px 20px; border-radius: 6px;">Download</button>
+          </form>
+        </td>
+      </tr>
+    </table>
+</div>
   </div>
   {% else %}
     <h2>No results to display for query</h2>

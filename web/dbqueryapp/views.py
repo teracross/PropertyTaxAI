@@ -1,5 +1,9 @@
+import csv
+import json
 from django.shortcuts import render
 from django.db import connection
+from django.http import HttpResponse
+from io import StringIO
 from .forms import QueryForm
 
 SQL_QUERIES = {
@@ -18,6 +22,8 @@ def home(request):
     result = None
     error = None
     form = QueryForm(request.POST or None)
+    query_key = None 
+
     if request.method == 'POST' and form.is_valid():
         query_key = form.cleaned_data['query']
         sql = SQL_QUERIES.get(query_key)
@@ -30,4 +36,49 @@ def home(request):
                     result = dictfetchall(cursor)
             except Exception as e:
                 error = str(e)
-    return render(request, 'home.html', {'form': form, 'result': result, 'error': error})
+    return render(request, 'home.html', {'form': form, 'result': result, 'error': error, 'query_key': query_key})
+
+def export_results(request, query_key):
+    format_type = request.GET.get('format', 'csv') # Default to CSV
+    sql = SQL_QUERIES.get(query_key)
+    if not sql:
+        return HttpResponse("Invalid query", status=404)
+    
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            result = dictfetchall(cursor)
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", status=500)
+    
+    filename = f"query_result.{format_type}"
+    
+    if format_type == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        output = StringIO()
+        writer = csv.DictWriter(output, fieldnames=result[0].keys() if result else [])
+        writer.writeheader()
+        writer.writerows(result)
+        response.write(output.getvalue())
+        return response
+    
+    elif format_type == 'json':
+        response = HttpResponse(json.dumps(result), content_type='application/json')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    
+    elif format_type == 'sql':
+        # Simple SQL dump (INSERT statements)
+        response = HttpResponse(content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        lines = []
+        columns = result[0].keys() if result else []
+        placeholders = ', '.join(['%s'] * len(columns))
+        lines.append(f"INSERT INTO table_name ({', '.join(columns)}) VALUES")
+        for row in result:
+            lines.append(f"  ({placeholders}),\n" % tuple(row.values()))
+        response.write('\n'.join(lines[:-1]) + ';')  # Remove last comma
+        return response
+    
+    return HttpResponse("Unsupported format", status=400)
