@@ -1,5 +1,7 @@
 import csv
 import json
+import logging
+import sqlparse
 from django.shortcuts import render
 from django.db import connection
 from django.http import HttpResponse
@@ -23,20 +25,28 @@ def home(request):
     error = None
     form = QueryForm(request.POST or None)
     query_key = None 
+    raw_sql = None
+    formatted_sql = None
 
     if request.method == 'POST' and form.is_valid():
         query_key = form.cleaned_data['query']
-        sql = SQL_QUERIES.get(query_key)
-        if not sql:
+        raw_sql = SQL_QUERIES.get(query_key)
+
+        if not raw_sql:
             error = 'No SQL query found for the selected option.'
         else: 
             try:
                 with connection.cursor() as cursor:
-                    cursor.execute(sql)
+                    cursor.execute(raw_sql)
                     result = dictfetchall(cursor)
             except Exception as e:
                 error = str(e)
-    return render(request, 'home.html', {'form': form, 'result': result, 'error': error, 'query_key': query_key})
+                
+            try:
+                formatted_sql = sqlparse.format(raw_sql, reindent=True, keyword_case='upper')
+            except Exception as e:
+                logging.getLogger(__name__).warning("SQL formatting failed for query '%s': %s", query_key, e)
+    return render(request, 'home.html', {'form': form, 'result': result, 'error': error, 'query_key': query_key, 'sql': raw_sql, 'formatted_sql': formatted_sql})
 
 def export_results(request, query_key):
     format_type = request.GET.get('format', 'csv') # Default to CSV
