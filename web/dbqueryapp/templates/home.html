@@ -151,17 +151,24 @@
   {% if error %}
   <div class="error">{{ error }}</div>
   {% endif %}
-  {% if formatted_sql %}
+  {% if formatted_sql or sql %}
+  {% with display_sql=formatted_sql|default:sql %}
   <div class="sql-block">
-    <h3 style="margin-bottom:8px;">SQL:</h3>
-    <pre class="sql-pre">{{ formatted_sql|escape }}</pre>
+    <h3 style="margin-bottom:8px;">SQL Statement Executed:</h3>
+    <pre class="sql-pre">{{ display_sql|escape }}</pre>
   </div>
-  {% elif sql %}
-  <div class="sql-block">
-    <h3 style="margin-bottom:8px;">SQL:</h3>
-    <pre class="sql-pre">{{ sql|escape }}</pre>
-  </div>
+  {% endwith %}
   {% endif %}
+  <!-- Custom SQL input placed below the SQL block -->
+  <div style="margin-top:16px; text-align:left; width:100%; display:flex; justify-content:center;">
+    <form method="post" style="width:100%; max-width:920px;">
+      {% csrf_token %}
+      {{ custom_form.user_sql }}
+      <div style="text-align:center; margin-top:8px;">
+        <button type="submit">Execute Custom SQL</button>
+      </div>
+    </form>
+  </div>
 </div>
 <div class="results_container">
   {% if result %}
