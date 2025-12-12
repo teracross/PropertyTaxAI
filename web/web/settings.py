@@ -130,3 +130,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Use cookie-based sessions to avoid writing session rows to the database.
+# This keeps the Postgres user read-only and prevents the "relation django_session does not exist" error
+# in environments where migrations haven't been run or DB writes are restricted.
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+
+# Recommended secure cookie settings (adjust for your environment)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS

@@ -7,3 +7,4 @@ camelot-py[all]
 modin[all]
 Django
 python-dotenv
+sqlparse
