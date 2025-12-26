@@ -76,6 +76,22 @@
             margin-right: auto;
             font-size: 1rem;
         }
+          .sql-block {
+            margin-top: 16px;
+            text-align: left;
+            max-width: 80vw;
+            margin-left: auto;
+            margin-right: auto;
+          }
+          .sql-pre {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow: auto;
+            max-height: 220px;
+          }
         .error {
             color: #c62828;
             background: #ffebee;
@@ -129,12 +145,32 @@
   <form method="post">
     {% csrf_token %}
     {{ form.query }}
+    <input type="hidden" name="form_type" value="query_form">
     <br>
     <button type="submit">Execute Query</button>
   </form>
   {% if error %}
   <div class="error">{{ error }}</div>
   {% endif %}
+  {% if formatted_sql or sql %}
+  {% with display_sql=formatted_sql|default:sql %}
+  <div class="sql-block">
+    <h3 style="margin-bottom:8px;">SQL Statement Executed:</h3>
+    <pre class="sql-pre">{{ display_sql|escape }}</pre>
+  </div>
+  {% endwith %}
+  {% endif %}
+  <!-- Custom SQL input placed below the SQL block -->
+  <div style="margin-top:16px; text-align:left; width:100%; display:flex; justify-content:center;">
+    <form method="post" style="width:100%; max-width:920px;">
+      {% csrf_token %}
+      {{ custom_form.user_sql }}
+      <input type="hidden" name="form_type" value="custom_sql_form">
+      <div style="text-align:center; margin-top:8px;">
+        <button type="submit">Execute Custom SQL</button>
+      </div>
+    </form>
+  </div>
 </div>
 <div class="results_container">
   {% if result %}
@@ -159,6 +195,18 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+    <div style="margin-top: 20px; text-align: center;">
+      {% if query_id %}
+      <form method="get" action="{% url 'export_results' query_id=query_id %}" style="display: inline-block;">
+        <select name="format" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; margin-right: 8px;">
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+          <option value="sql">SQL</option>
+        </select>
+        <button type="submit" style="padding: 8px 20px; border-radius: 6px; border: 1px solid #ddd; background: #007cba; color: white; cursor: pointer;">Download</button>
+      </form>
+      {% endif %}
     </div>
   </div>
   {% else %}

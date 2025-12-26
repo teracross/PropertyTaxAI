@@ -7,3 +7,6 @@ camelot-py[all]
 modin[all]
 Django
 python-dotenv
+sqlparse
+sqlglot>=28.5.0
+django-redis
