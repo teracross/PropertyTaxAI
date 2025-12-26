@@ -8,10 +8,12 @@ QUERY_CHOICES = [
 
 
 class QueryForm(forms.Form):
+    form_type = forms.CharField(widget=forms.HiddenInput(), initial='query_form')
     query = forms.ChoiceField(choices=QUERY_CHOICES, widget=forms.Select(attrs={'class': 'query-dropdown'}))
 
 
 class CustomSQLForm(forms.Form):
+    form_type = forms.CharField(widget=forms.HiddenInput(), initial='custom_sql_form')
     user_sql = forms.CharField(
         required=False,
         label='Custom SQL (read-only)',

@@ -145,6 +145,7 @@
   <form method="post">
     {% csrf_token %}
     {{ form.query }}
+    <input type="hidden" name="form_type" value="query_form">
     <br>
     <button type="submit">Execute Query</button>
   </form>
@@ -164,6 +165,7 @@
     <form method="post" style="width:100%; max-width:920px;">
       {% csrf_token %}
       {{ custom_form.user_sql }}
+      <input type="hidden" name="form_type" value="custom_sql_form">
       <div style="text-align:center; margin-top:8px;">
         <button type="submit">Execute Custom SQL</button>
       </div>
@@ -195,8 +197,8 @@
       </table>
     </div>
     <div style="margin-top: 20px; text-align: center;">
-      {% if query_key %}
-      <form method="get" action="{% url 'export_results' query_key=query_key %}" style="display: inline-block;">
+      {% if query_id %}
+      <form method="get" action="{% url 'export_results' query_id=query_id %}" style="display: inline-block;">
         <select name="format" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; margin-right: 8px;">
           <option value="csv">CSV</option>
           <option value="json">JSON</option>
