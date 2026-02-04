@@ -15,6 +15,10 @@ plan
 
 # generated or data files
 **/*.txt
+!requirements.txt
+!**/requirements.txt
+!requirements-webapp.txt
+!**/requirements-webapp.txt
 test/data/**/*.zip
 **/*.Identifier
 
