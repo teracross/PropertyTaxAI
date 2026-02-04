@@ -2,7 +2,7 @@
 
 if [ -z "$VIRTUAL_ENV" ]; then
   echo "Starting virtual env"
-  . ./.venv/bin/activate
+  . ./.venv_django/bin/activate
 fi
 
 cd ./web/
